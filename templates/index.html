@@ -1,0 +1,115 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Client-Server Demo</title>
+    <style>
+        body { 
+            font-family: Arial; 
+            max-width: 800px; 
+            margin: 0 auto; 
+            padding: 20px;
+        }
+        .message-box {
+            border: 1px solid #ccc;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        #messageList {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #eee;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        .server-info {
+            background: #f0f0f0;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Client-Server Model Demo</h1>
+    
+    <div class="message-box">
+        <h3>Client Side (Browser)</h3>
+        <input type="text" id="messageInput" placeholder="Type a message">
+        <button onclick="sendMessage()">Send to Server</button>
+        <button onclick="getMessages()">Get Messages</button>
+        <button onclick="clearMessages()">Clear All</button>
+    </div>
+
+    <div class="server-info">
+        <h3>Server Response:</h3>
+        <pre id="serverResponse">No response yet</pre>
+    </div>
+
+    <div class="message-box">
+        <h3>Message History:</h3>
+        <div id="messageList"></div>
+    </div>
+
+    <script>
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const response = document.getElementById('serverResponse');
+            
+            try {
+                // Client sending request to server
+                const res = await fetch('/api/send', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: input.value
+                    })
+                });
+                
+                // Client processing server response
+                const data = await res.json();
+                response.textContent = JSON.stringify(data, null, 2);
+                input.value = '';
+                
+                // Update message list
+                getMessages();
+            } catch (error) {
+                response.textContent = 'Error: ' + error.message;
+            }
+        }
+
+        async function getMessages() {
+            const messageList = document.getElementById('messageList');
+            
+            try {
+                // Client requesting data from server
+                const res = await fetch('/api/messages');
+                const messages = await res.json();
+                
+                // Client displaying server response
+                messageList.innerHTML = messages.map(msg => 
+                    `<div>
+                        <strong>${msg.time}</strong>: 
+                        ${msg.text} 
+                        (Length: ${msg.length})
+                    </div>`
+                ).join('');
+            } catch (error) {
+                messageList.innerHTML = 'Error loading messages';
+            }
+        }
+
+        async function clearMessages() {
+            try {
+                await fetch('/api/clear', { method: 'POST' });
+                getMessages();
+                document.getElementById('serverResponse').textContent = 'Messages cleared';
+            } catch (error) {
+                console.error('Error clearing messages:', error);
+            }
+        }
+    </script>
+</body>
+</html>
